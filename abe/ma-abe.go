@@ -445,6 +445,13 @@ func (auth *MAABEAuth) GenerateAttribKeys(gid string, attribs []string) ([]*MAAB
 // decryption policy of the ciphertext. In case this is not possible or
 // something goes wrong an error is returned.
 func (a *MAABE) Decrypt(ct *MAABECipher, ks []*MAABEKey) (string, error) {
+	// ct.Msp is not authenticated; because we trust all of the rows to be the
+	// same length, we can get an OOB panic if they are not, so we sanity check
+	// beforehand. Note this doesn't guarantee the MSP we receive is the one
+	// the ciphertext was encrypted under
+	if err := ct.Msp.checkConsistent(len(ct.Msp.Mat)); err != nil {
+		return "", fmt.Errorf("the provided ciphertext is malformed: %w", err)
+	}
 	// sanity checks
 	if len(ks) == 0 {
 		return "", fmt.Errorf("empty set of attribute keys")
